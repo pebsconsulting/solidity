@@ -23,6 +23,7 @@
 #include <libsolidity/formal/SymbolicTypes.h>
 
 #include <libsolidity/interface/ErrorReporter.h>
+#include <libdevcore/CommonData.h>
 
 #include <boost/range/adaptor/map.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -78,6 +79,9 @@ bool SMTChecker::visit(FunctionDefinition const& _function)
 		m_interface->reset();
 		m_pathConditions.clear();
 		m_expressions.clear();
+		m_specialVariables.clear();
+		m_uninterpretedFunctions.clear();
+		m_uninterpretedTerms.clear();
 		resetStateVariables();
 		initializeLocalVariables(_function);
 	}
@@ -412,9 +416,12 @@ void SMTChecker::visitGasLeft(FunctionCall const& _funCall)
 
 void SMTChecker::visitBlockHash(FunctionCall const& _funCall)
 {
-	string blockHash = "blockhash()";
-	// TODO Define blockhash as an uninterpreted function
-	defineSpecialVariable(blockHash, _funCall);
+	string blockHash = "blockhash";
+	defineUninterpretedFunction(blockHash, {smt::Sort::Int}, smt::Sort::Int);
+	auto const& arguments = _funCall.arguments();
+	solAssert(arguments.size() == 1, "");
+	defineExpr(_funCall, m_uninterpretedFunctions.at(blockHash)(expr(*arguments[0])));
+	m_uninterpretedTerms.push_back(&_funCall);
 }
 
 void SMTChecker::inlineFunctionCall(FunctionCall const& _funCall)
@@ -587,6 +594,11 @@ void SMTChecker::defineSpecialVariable(string const& _name, Expression const& _e
 	defineExpr(_expr, m_specialVariables.at(_name)->currentValue());
 }
 
+void SMTChecker::defineUninterpretedFunction(string const& _name, vector<smt::Sort> const& _domain, smt::Sort _codomain)
+{
+	if (!m_uninterpretedFunctions.count(_name))
+		m_uninterpretedFunctions.emplace(_name, m_interface->newFunction(_name, _domain, _codomain));
+}
 
 void SMTChecker::arithmeticOperation(BinaryOperation const& _op)
 {
@@ -752,6 +764,7 @@ void SMTChecker::checkCondition(
 
 	vector<smt::Expression> expressionsToEvaluate;
 	vector<string> expressionNames;
+	map<string, unsigned> expressionIndices;
 	if (m_functionPath.size())
 	{
 		solAssert(m_scanner, "");
@@ -769,6 +782,11 @@ void SMTChecker::checkCondition(
 		{
 			expressionsToEvaluate.emplace_back(var.second->currentValue());
 			expressionNames.push_back(var.first);
+		}
+		for (auto const& uf: m_uninterpretedTerms)
+		{
+			expressionsToEvaluate.emplace_back(expr(*uf));
+			expressionNames.push_back(m_scanner->printSourceLocation(uf->location()));
 		}
 	}
 	smt::CheckResult result;
@@ -792,7 +810,7 @@ void SMTChecker::checkCondition(
 			modelMessage << "  for:\n";
 			solAssert(values.size() == expressionNames.size(), "");
 			map<string, string> sortedModel;
-			for (size_t i = 0; i < values.size(); ++i)
+			for (size_t i = 0; i < expressionNames.size(); ++i)
 				if (expressionsToEvaluate.at(i).name != values.at(i))
 					sortedModel[expressionNames.at(i)] = values.at(i);
 
@@ -889,7 +907,8 @@ SMTChecker::checkSatisfiableAndGenerateModel(vector<smt::Expression> const& _exp
 		try
 		{
 			// Parse and re-format nicely
-			value = formatNumber(bigint(value));
+			if (isValidDecimal(value) || isValidHex(value))
+				value = formatNumber(bigint(value));
 		}
 		catch (...) { }
 	}
