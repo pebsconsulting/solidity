@@ -1,3 +1,8 @@
+### 0.5.1 (unreleased)
+
+Features:
+ * Code generator: Do not perform redundant double cleanup on unsigned integers when loading from calldata.
+
 ### 0.5.0 (unreleased)
 
 How to update your code:
