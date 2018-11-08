@@ -372,7 +372,7 @@ The following functions must be available:
 | lts256(x:s256, y:s256) -> z:bool            | true if x < y, false otherwise                                  |
 |                                             | (for signed numbers in two's complement)                        |
 +---------------------------------------------+-----------------------------------------------------------------+
-| gts256(x:s256, y:s256) -> z:bool           | true if x > y, false otherwise                                  |
+| gts256(x:s256, y:s256) -> z:bool            | true if x > y, false otherwise                                  |
 |                                             | (for signed numbers in two's complement)                        |
 +---------------------------------------------+-----------------------------------------------------------------+
 | equ256(x:u256, y:u256) -> z:bool            | true if x == y, false otherwise                                 |
