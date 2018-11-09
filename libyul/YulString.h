@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <libyul/Exceptions.h>
+
 #include <boost/noncopyable.hpp>
 
 #include <map>
@@ -35,14 +37,12 @@ namespace yul
 class YulStringRepository: boost::noncopyable
 {
 public:
-	YulStringRepository()
-	{
-		reset();
-	}
+	YulStringRepository();
+	~YulStringRepository();
 	static YulStringRepository& instance()
 	{
-		static YulStringRepository inst;
-		return inst;
+		yulAssert(!!globalInstance, "No YulStringRepository present.");
+		return *globalInstance;
 	}
 	size_t stringToId(std::string const& _string)
 	{
@@ -61,15 +61,8 @@ public:
 		return *m_strings.at(_id);
 	}
 
-	void reset()
-	{
-		m_strings.clear();
-		m_ids.clear();
-		m_strings.emplace_back(std::make_shared<std::string>());
-		m_ids[std::string{}] = 0;
-	}
-
 private:
+	static YulStringRepository *globalInstance;
 	std::vector<std::shared_ptr<std::string>> m_strings;
 	std::map<std::string, size_t> m_ids;
 };
@@ -85,17 +78,34 @@ public:
 	YulString& operator=(YulString&&) = default;
 
 	/// This is not consistent with the string <-operator!
-	bool operator<(YulString const& _other) const { return m_id < _other.m_id; }
-	bool operator==(YulString const& _other) const { return m_id == _other.m_id; }
-	bool operator!=(YulString const& _other) const { return m_id != _other.m_id; }
+	bool operator<(YulString const& _other) const
+	{
+		assertMatchingRepositories(*this, _other);
+		return m_id < _other.m_id;
+	}
+	bool operator==(YulString const& _other) const
+	{
+		assertMatchingRepositories(*this, _other);
+		return m_id == _other.m_id;
+	}
+	bool operator!=(YulString const& _other) const
+	{
+		assertMatchingRepositories(*this, _other);
+		return m_id != _other.m_id;
+	}
 
 	bool empty() const { return m_id == 0; }
 	std::string const& str() const
 	{
+		yulAssert(m_repo == &YulStringRepository::instance(), "Attempted to query YulString from invalid YulStringRepository.");
 		return YulStringRepository::instance().idToString(m_id);
 	}
 
 private:
+	static void assertMatchingRepositories(YulString const& _s1, YulString const& _s2) {
+		yulAssert(_s1.m_repo == _s2.m_repo, "Comparing YulStrings from different YulStringRepositories");
+	}
+	YulStringRepository const* m_repo = &YulStringRepository::instance();
 	/// ID of the string. Assumes that the empty string has ID zero.
 	size_t m_id = 0;
 };

@@ -23,6 +23,8 @@
 
 #include <test/libsolidity/ErrorCheck.h>
 
+#include <libyul/YulString.h>
+
 #include <libsolidity/inlineasm/AsmParser.h>
 #include <libsolidity/inlineasm/AsmAnalysis.h>
 #include <libsolidity/inlineasm/AsmAnalysisInfo.h>
@@ -51,6 +53,7 @@ bool parse(string const& _source, ErrorReporter& errorReporter)
 {
 	try
 	{
+		yul::YulStringRepository yulStringRepository;
 		auto scanner = make_shared<Scanner>(CharStream(_source));
 		auto parserResult = assembly::Parser(errorReporter, assembly::AsmFlavour::Yul).parse(scanner, false);
 		if (parserResult)

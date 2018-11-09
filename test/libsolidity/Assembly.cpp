@@ -35,6 +35,8 @@
 
 #include <boost/test/unit_test.hpp>
 
+#include <libyul/YulString.h>
+
 #include <string>
 #include <iostream>
 
@@ -150,6 +152,7 @@ BOOST_AUTO_TEST_SUITE(Assembly)
 
 BOOST_AUTO_TEST_CASE(location_test)
 {
+	yul::YulStringRepository yulStringRepository;
 	char const* sourceCode = R"(
 	contract test {
 		function f() public returns (uint256 a) {

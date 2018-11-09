@@ -106,7 +106,8 @@ void CompilerStack::reset(bool _keepSources)
 		m_stackState = Empty;
 		m_sources.clear();
 	}
-	yul::YulStringRepository::instance().reset();
+	m_yulStringRepository.reset();
+	m_yulStringRepository = std::unique_ptr<yul::YulStringRepository>(new yul::YulStringRepository());
 	m_libraries.clear();
 	m_evmVersion = EVMVersion();
 	m_optimize = false;

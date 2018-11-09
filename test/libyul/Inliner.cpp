@@ -26,6 +26,7 @@
 #include <libyul/optimiser/FullInliner.h>
 #include <libyul/optimiser/FunctionHoister.h>
 #include <libyul/optimiser/FunctionGrouper.h>
+#include <libyul/YulString.h>
 
 #include <libsolidity/inlineasm/AsmPrinter.h>
 
@@ -44,6 +45,8 @@ namespace
 {
 string inlinableFunctions(string const& _source)
 {
+	YulStringRepository yulStringRepository;
+
 	auto ast = disambiguate(_source);
 
 	InlinableExpressionFunctionFinder funFinder;

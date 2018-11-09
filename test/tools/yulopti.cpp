@@ -181,6 +181,7 @@ public:
 	}
 
 private:
+	YulStringRepository yulStringRepository;
 	ErrorList m_errors;
 	shared_ptr<assembly::Block> m_ast;
 	shared_ptr<AsmAnalysisInfo> m_analysisInfo;

@@ -27,6 +27,8 @@
 #include <libsolidity/interface/ReadFile.h>
 #include <libsolidity/interface/EVMVersion.h>
 
+#include <libyul/YulString.h>
+
 #include <libevmasm/SourceLocation.h>
 #include <libevmasm/LinkerObject.h>
 
@@ -95,6 +97,7 @@ public:
 	/// @param _readFile callback to used to read files for import statements. Must return
 	/// and must not emit exceptions.
 	explicit CompilerStack(ReadCallback::Callback const& _readFile = ReadCallback::Callback()):
+		m_yulStringRepository { new yul::YulStringRepository() },
 		m_readFile(_readFile),
 		m_errorList(),
 		m_errorReporter(m_errorList) {}
@@ -329,6 +332,7 @@ private:
 		FunctionDefinition const& _function
 	) const;
 
+	std::unique_ptr<yul::YulStringRepository> m_yulStringRepository;
 	ReadCallback::Callback m_readFile;
 	ReadCallback::Callback m_smtQuery;
 	bool m_optimize = false;

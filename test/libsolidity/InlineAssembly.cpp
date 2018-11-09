@@ -29,6 +29,8 @@
 #include <test/libsolidity/ErrorCheck.h>
 #include <libevmasm/Assembly.h>
 
+#include <libyul/YulString.h>
+
 #include <boost/optional.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
@@ -55,6 +57,8 @@ boost::optional<Error> parseAndReturnFirstError(
 	AssemblyStack::Machine _machine = AssemblyStack::Machine::EVM
 )
 {
+	yul::YulStringRepository yulStringRepository;
+
 	AssemblyStack stack(dev::test::Options::get().evmVersion(), _language);
 	bool success = false;
 	try
@@ -117,6 +121,7 @@ Error expectError(
 
 void parsePrintCompare(string const& _source, bool _canWarn = false)
 {
+	yul::YulStringRepository yulStringRepository;
 	AssemblyStack stack(dev::test::Options::get().evmVersion());
 	BOOST_REQUIRE(stack.parseAndAnalyze("", _source));
 	if (_canWarn)
@@ -567,10 +572,13 @@ BOOST_AUTO_TEST_CASE(print_string_literal_unicode)
 {
 	string source = "{ let x := \"\\u1bac\" }";
 	string parsed = "{\n    let x := \"\\xe1\\xae\\xac\"\n}";
-	AssemblyStack stack(dev::test::Options::get().evmVersion());
-	BOOST_REQUIRE(stack.parseAndAnalyze("", source));
-	BOOST_REQUIRE(stack.errors().empty());
-	BOOST_CHECK_EQUAL(stack.print(), parsed);
+	{
+		yul::YulStringRepository yulStringRepository;
+		AssemblyStack stack(dev::test::Options::get().evmVersion());
+		BOOST_REQUIRE(stack.parseAndAnalyze("", source));
+		BOOST_REQUIRE(stack.errors().empty());
+		BOOST_CHECK_EQUAL(stack.print(), parsed);
+	}
 	parsePrintCompare(parsed);
 }
 
